@@ -82,12 +82,12 @@ class GeoFireCollectionRef {
   ///
   /// Returns [StreamController.stream] instance from rxdart, which is combined stream,
   /// for all 9 listeners.
-  Stream<List<DocumentSnapshot>> _buildQueryStream({
-    required GeoFirePoint center,
-    required double radius,
-    required String field,
-    bool strictMode = false,
-  }) {
+  Stream<List<DocumentSnapshot>> _buildQueryStream(
+      {required GeoFirePoint center,
+      required double radius,
+      required String field,
+      bool strictMode = false,
+      bool includeMetadataChanges = false}) {
     final precision = Util.setPrecision(radius);
     final centerHash = center.hash.substring(0, precision);
     final area = Set<String>.from(
@@ -96,7 +96,9 @@ class GeoFireCollectionRef {
 
     Iterable<Stream<List<DistanceDocSnapshot>>> queries = area.map((hash) {
       final tempQuery = _queryPoint(hash, field);
-      return _createStream(tempQuery)!.map((QuerySnapshot querySnapshot) {
+      return _createStream(tempQuery,
+              includeMetadataChanges: includeMetadataChanges)!
+          .map((QuerySnapshot querySnapshot) {
         return querySnapshot.docs
             .map((element) => DistanceDocSnapshot(element, null))
             .toList();
@@ -161,12 +163,14 @@ class GeoFireCollectionRef {
     required double radius,
     required String field,
     bool strictMode = false,
+    bool includeMetadataChanges = false,
   }) {
     return _buildQueryStream(
       center: center,
       radius: radius,
       field: field,
       strictMode: strictMode,
+      includeMetadataChanges: includeMetadataChanges
     );
   }
 
@@ -216,7 +220,8 @@ class GeoFireCollectionRef {
   }
 
   /// create an observable for [ref], [ref] can be [Query] or [CollectionReference]
-  Stream<QuerySnapshot>? _createStream(var ref) {
-    return ref.snapshots();
+  Stream<QuerySnapshot>? _createStream(var ref,
+      {bool includeMetadataChanges: false}) {
+    return ref.snapshots(includeMetadataChanges: includeMetadataChanges);
   }
 }
